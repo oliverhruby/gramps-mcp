@@ -1,0 +1,62 @@
+name: e2e-live
+
+# Live integration suite against the real backend. Manual-only
+# (workflow_dispatch); never on push/PR.
+#
+# STATUS: this workflow is deliberately DORMANT. GitHub-hosted runners often
+# cannot reach private/homespun backends (confirmed network-unreachable for the
+# original project). Prefer run_e2e.ps1 locally on a machine that can. Re-enable
+# the reachability probe below as a precondition + a daily schedule once
+# hosted runners work for this backend.
+#
+# PRIVACY DESIGN (public repo):
+#   - No credentials in the repo: only the GRAMPS_MCP_USERNAME /
+#     GRAMPS_MCP_PASSWORD secrets (injected via env; masked in run logs).
+#   - Zero-data output: GRAMPS_MCP_E2E_CI=1 makes the suite report dot-only,
+#     keeps NO payload previews / ids / identity text in the report or asserts.
+#     Identity parsing is verified against the one-way SHA-256 fingerprints in
+#     tests/e2e/expected_identities.fingerprint.json, never raw identities.
+#   - No artifacts are uploaded (public-repo artifacts are downloadable by anyone).
+#   - The suite is read-only: conftest guards mutating tools.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-live
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GRAMPS_MCP_E2E: "1"
+      GRAMPS_MCP_E2E_CI: "1"
+      GRAMPS_MCP_USERNAME: ${{ secrets.GRAMPS_MCP_USERNAME }}
+      GRAMPS_MCP_PASSWORD: ${{ secrets.GRAMPS_MCP_PASSWORD }}
+      GRAMPS_MCP_INSTANCES: ${{ vars.GRAMPS_MCP_INSTANCES }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require e2e credentials
+        run: |
+          if [ -z "$GRAMPS_MCP_USERNAME" ] || [ -z "$GRAMPS_MCP_PASSWORD" ]; then
+            echo "::error::Secrets GRAMPS_MCP_USERNAME/GRAMPS_MCP_PASSWORD are not configured. Add them at repo Settings -> Secrets and variables -> Actions, then re-run."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e . pytest
+
+      - name: Run live e2e suite
+        run: pytest -m e2e tests/e2e -q --no-header

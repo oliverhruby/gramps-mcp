@@ -1,0 +1,49 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.oliverhruby/gramps-mcp",
+  "title": "Gramps MCP MCP Server",
+  "description": "Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees.",
+  "version": "0.1.0",
+  "websiteUrl": "https://github.com/oliverhruby/gramps-mcp",
+  "repository": {
+    "url": "https://github.com/oliverhruby/gramps-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "gramps-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "uvx",
+      "environmentVariables": [
+        {
+          "name": "GRAMPS_MCP_USERNAME",
+          "description": "Your Gramps MCP username",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "GRAMPS_MCP_PASSWORD",
+          "description": "Your Gramps MCP password",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "GRAMPS_MCP_INSTANCES",
+          "description": "Comma-separated account/instance identifiers (optional)",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://ghcr.io/oliverhruby/gramps-mcp:latest"
+    }
+  ]
+}

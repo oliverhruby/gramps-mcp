@@ -1,0 +1,34 @@
+# Dependabot keeps dependencies up to date with weekly pull requests.
+#
+# - "pip"        : scans pyproject.toml / requirements.txt and bumps python deps.
+# - "github-actions": bumps the versions used in .github/workflows/*.yml.
+#
+# Security alerts + automated security updates for known CVEs are enabled at the
+# repo level (Settings -> Code security) regardless of this file; this file only
+# drives PRENOI "version updates" to stay current.
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    # gramps-mcp pins mcp<2 intentionally (FastMCP v1 API). Dependabot will
+    # still flag mcp 2.x — those PRs should be evaluated against the API change,
+    # not blindly merged.
+    ignore:
+      - dependency-name: "mcp"
+        versions: [">=2.0.0"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"

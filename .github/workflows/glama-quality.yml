@@ -1,0 +1,88 @@
+name: Glama Quality Watchdog
+
+# Weekly check of the live Glama TDQS grades for this project's server.
+# Any tool graded below the allowed threshold, a tool inventory that no
+# longer matches GLAMA_EXPECTED_TOOLS (stale scan), or an overall
+# qualityScore below GLAMA_MIN_SCORE keeps an issue open. The issue is
+# closed automatically once everything is back to green.
+#
+# GLAMA_API_KEY is an optional Actions secret (Glama directory API key from
+# https://glama.ai/settings/api-keys). When set, the overall qualityScore is
+# also checked; per-tool grade letters are always parsed from the public page.
+#
+# NOTE: keep GLAMA_EXPECTED_TOOLS in sync with the actual tool surface after
+# adding/removing tools (see AGENTS.md rule 3). It starts with just `ping`;
+# extend the list as domain tools land, mirroring the README tool table and
+# tests/e2e/test_manifest.EXPECTED_TOOLS.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # every Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: glama-quality
+  cancel-in-progress: true
+
+jobs:
+  check-glama:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Check Glama grades
+        run: python scripts/check_glama_quality.py
+        env:
+          GLAMA_SERVER_URL: https://glama.ai/mcp/servers/oliverhruby/gramps-mcp
+          GLAMA_API_KEY: ${{ secrets.GLAMA_API_KEY }}
+          GLAMA_ALLOWED: A
+          GLAMA_MIN_SCORE: "4.0"
+          GLAMA_EXPECTED_TOOLS: >-
+            analyze_dna, get_instances, get_living, get_relation,
+            get_server_info, get_timeline, manage_bookmark, manage_citation,
+            manage_event, manage_export, manage_family, manage_import,
+            manage_media, manage_note, manage_person, manage_place,
+            manage_report, manage_repository, manage_source, manage_tag,
+            manage_transaction, manage_tree, manage_type, manage_user,
+            merge_objects, ping, search
+
+      - name: Create or update watchdog issue
+        run: |
+          set -euo pipefail
+          LABEL="glama-quality"
+          gh label create "$LABEL" --description "Glama TDQS watchdog: open while any tool is below grade" 2>/dev/null || true
+
+          STATUS=$(cat reports/glama-quality-status.txt)
+          EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number')
+
+          case "$STATUS" in
+            VIOLATIONS)
+              TITLE=$(cat reports/glama-quality-title.txt)
+              if [ -n "$EXISTING" ]; then
+                gh issue edit "$EXISTING" --title "$TITLE" --body-file reports/glama-quality-issue.md
+                echo "Updated existing issue #$EXISTING"
+              else
+                gh issue create --title "$TITLE" --body-file reports/glama-quality-issue.md --label "$LABEL"
+              fi
+              ;;
+            CLEAN)
+              if [ -n "$EXISTING" ]; then
+                gh issue close "$EXISTING" --comment "All Glama quality checks are back to green (tool grades, inventory, score) as of the latest weekly run."
+                echo "Closed issue #$EXISTING"
+              else
+                echo "No violations, no open issue"
+              fi
+              ;;
+            *)
+              echo "ERROR: unexpected status '$STATUS'"
+              exit 1
+              ;;
+          esac

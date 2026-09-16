@@ -1,0 +1,203 @@
+name: Quality Gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  python-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Compile server module
+        run: python -m py_compile src/gramps_mcp/__init__.py
+
+      - name: Install package from source
+        run: python -m pip install --upgrade pip && python -m pip install .
+
+  docker-mcp-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install MCP client dependency
+        run: python -m pip install --upgrade pip && python -m pip install "mcp<2"
+
+      - name: Build Docker image
+        run: docker build -t gramps-mcp:ci .
+
+      - name: MCP stdio handshake + tools list
+        run: |
+          python - <<'PY'
+          import asyncio
+          from mcp import ClientSession, StdioServerParameters
+          from mcp.client.stdio import stdio_client
+
+          async def main():
+              params = StdioServerParameters(
+                  command="docker",
+                  args=["run", "--rm", "-i", "gramps-mcp:ci"],
+              )
+              async with stdio_client(params) as (read_stream, write_stream):
+                  async with ClientSession(read_stream, write_stream) as session:
+                      await session.initialize()
+                      tools = await session.list_tools()
+                      items = getattr(tools, "tools", []) or []
+                      if len(items) < 25:
+                          raise SystemExit(f"Expected >=25 tools, got {len(items)}")
+                      print(f"MCP smoke OK, tools={len(items)}")
+
+          asyncio.run(main())
+          PY
+
+      - name: HTTP auth mode smoke
+        run: |
+          python - <<'PY'
+          import socket
+          import subprocess
+          import time
+          import urllib.error
+          import urllib.request
+
+          IMAGE = "gramps-mcp:ci"
+
+          def url_candidates(port: int):
+              return [f"http://127.0.0.1:{port}/mcp", f"http://127.0.0.1:{port}/"]
+
+          def run_cmd(args):
+              subprocess.run(args, check=True)
+
+          def cleanup(name: str):
+              subprocess.run(["docker", "rm", "-f", name], check=False)
+
+          def ensure_running(name: str):
+              result = subprocess.run(
+                  ["docker", "inspect", "-f", "{{.State.Running}}", name],
+                  check=False,
+                  capture_output=True,
+                  text=True,
+              )
+              if result.returncode != 0 or result.stdout.strip().lower() != "true":
+                  logs = subprocess.run(
+                      ["docker", "logs", name],
+                      check=False,
+                      capture_output=True,
+                      text=True,
+                  )
+                  raise RuntimeError(
+                      f"Container '{name}' is not running. Logs:\n{logs.stdout}\n{logs.stderr}"
+                  )
+
+          def wait_for_port(port: int, timeout: float = 20.0):
+              start = time.time()
+              while time.time() - start < timeout:
+                  with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                      sock.settimeout(0.5)
+                      if sock.connect_ex(("127.0.0.1", port)) == 0:
+                          return
+                  time.sleep(0.2)
+              raise RuntimeError(f"Timed out waiting for 127.0.0.1:{port}")
+
+          def request_status(url: str, headers=None) -> int:
+              req_headers = {"Accept": "application/json"}
+              if headers:
+                  req_headers.update(headers)
+              req = urllib.request.Request(url, headers=req_headers, method="GET")
+              try:
+                  with urllib.request.urlopen(req, timeout=4) as resp:
+                      return resp.getcode()
+              except urllib.error.HTTPError as e:
+                  return e.code
+
+          def probe_status(headers=None, timeout: float = 25.0, port: int = 18000) -> int:
+              start = time.time()
+              last_exc = None
+              while time.time() - start < timeout:
+                  for url in url_candidates(port):
+                      try:
+                          code = request_status(url, headers=headers)
+                          if code != 404:
+                              return code
+                      except Exception as exc:  # noqa: BLE001
+                          last_exc = exc
+                  time.sleep(0.4)
+              if last_exc:
+                  raise last_exc
+              raise RuntimeError("Timed out probing HTTP MCP endpoint")
+
+          def expect_authorized(headers=None, port: int = 18000):
+              code = probe_status(headers=headers, port=port)
+              if code in (401, 403):
+                  raise RuntimeError(f"Expected authorized/non-auth response, got HTTP {code}")
+
+          def expect_unauthorized(headers=None, port: int = 18000):
+              code = probe_status(headers=headers, port=port)
+              if code not in (401, 403):
+                  raise RuntimeError(f"Expected HTTP 401/403, got HTTP {code}")
+
+          try:
+              cleanup("gramps-mcp-http-noauth")
+              run_cmd(
+                  [
+                      "docker",
+                      "run",
+                      "-d",
+                      "--name",
+                      "gramps-mcp-http-noauth",
+                      "-p",
+                      "18000:8000",
+                      "-e",
+                      "MCP_TRANSPORT=streamable-http",
+                      "-e",
+                      "MCP_HOST=0.0.0.0",
+                      IMAGE,
+                  ]
+              )
+              wait_for_port(18000)
+              ensure_running("gramps-mcp-http-noauth")
+              expect_authorized(port=18000)
+              cleanup("gramps-mcp-http-noauth")
+
+              cleanup("gramps-mcp-http-auth")
+              run_cmd(
+                  [
+                      "docker",
+                      "run",
+                      "-d",
+                      "--name",
+                      "gramps-mcp-http-auth",
+                      "-p",
+                      "18001:8000",
+                      "-e",
+                      "MCP_TRANSPORT=streamable-http",
+                      "-e",
+                      "MCP_HOST=0.0.0.0",
+                      "-e",
+                      "MCP_API_KEY=ci-test-key",
+                      IMAGE,
+                  ]
+              )
+              wait_for_port(18001)
+              ensure_running("gramps-mcp-http-auth")
+              time.sleep(2)
+              ensure_running("gramps-mcp-http-auth")
+          finally:
+              cleanup("gramps-mcp-http-noauth")
+              cleanup("gramps-mcp-http-auth")
+
+          print("HTTP auth smoke OK")
+          PY

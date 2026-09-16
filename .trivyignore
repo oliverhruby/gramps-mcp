@@ -1,0 +1,29 @@
+# Add accepted findings as one ID per line, for example:
+# CVE-2024-12345
+# GHSA-xxxx-yyyy-zzzz
+#
+# Keep this file minimal and temporary:
+# - include a link to tracking issue in PR text
+# - set a target removal date
+
+# False positives in image scan: package versions are not present in runtime
+# image (`setuptools==84.0.0`, no `msgpack` installed).
+# Re-evaluate on Trivy DB updates. Target removal: 2026-12-31.
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
+
+# libuuid / util-linux CVEs in alpine base image — resolve on next base image bump.
+# https://avd.aquasec.com/nvd/cve-2026-53612
+# https://avd.aquasec.com/nvd/cve-2026-53613
+# https://avd.aquasec.com/nvd/cve-2026-53614
+# https://avd.aquasec.com/nvd/cve-2026-76642
+# https://avd.aquasec.com/nvd/cve-2026-78408
+# https://avd.aquasec.com/nvd/cve-2026-78409
+# https://avd.aquasec.com/nvd/cve-2026-78410
+CVE-2026-53612
+CVE-2026-53613
+CVE-2026-53614
+CVE-2026-76642
+CVE-2026-78408
+CVE-2026-78409
+CVE-2026-78410

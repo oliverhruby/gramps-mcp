@@ -1,0 +1,56 @@
+name: Publish
+
+# Publish gramps-mcp to PyPI using OpenID Connect (trusted publishing).
+#
+# One-time setup required on PyPI (no API token needed after that):
+#   1. Create an account at https://pypi.org (free) if you don't have one.
+#   2. Go to https://pypi.org/manage/projects/ and create a project named
+#      `gramps-mcp`, or add a publisher to an existing project by opening
+#      it -> "Publishing" -> "Add a new publisher".
+#   3. Provider: GitHub Actions
+#        Project name : gramps-mcp
+#        Owner        : oliverhruby
+#        Repository   : gramps-mcp
+#        Workflow name: publish.yml        <- must match THIS filename
+#        Environment  : release            <- (optional but recommended)
+#   4. Click "Add". Done.
+#
+# After registering, pushing a tag like `v0.1.0` runs this workflow and uploads
+# automatically. Ensure `version` in pyproject.toml matches the tag.
+#
+# NOTE: GitHub environment "release" must exist (Settings -> Environments) and,
+# if restricted, be approved before the publish job runs.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # required for OIDC trusted publishing to PyPI
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Verify tag matches package version
+        run: python scripts/check_tag_matches_version.py
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build
+
+      - name: Build sdist + wheel
+        run: python -m build
+
+      - name: Publish to PyPI (OIDC, no token)
+        uses: pypa/gh-action-pypi-publish@v1.14.2
+        with:
+          packages-dir: dist/

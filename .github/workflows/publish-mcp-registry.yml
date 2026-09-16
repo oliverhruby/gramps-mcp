@@ -1,0 +1,70 @@
+name: Publish to MCP Registry
+
+# Publishes the server.json metadata to the MCP Registry (registry.modelcontextprotocol.io).
+# Uses GitHub OIDC authentication (namespace: io.github.oliverhruby/*).
+# Runs after a version tag is pushed (same trigger as PyPI/Docker publish).
+# Requires: mcp-publisher CLI (installed from GitHub releases).
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # required for OIDC authentication to MCP Registry
+  contents: read
+
+jobs:
+  publish-mcp-registry:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify tag matches package version
+        run: python scripts/check_tag_matches_version.py
+
+      - name: Extract version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(python - <<'PY'
+          import pathlib, re
+          text = pathlib.Path('pyproject.toml').read_text(encoding='utf-8')
+          m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+          if not m:
+              raise SystemExit('version not found in pyproject.toml')
+          print(m.group(1))
+          PY
+          )
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install mcp-publisher
+        run: |
+          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_${ARCH}.tar.gz" | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+          mcp-publisher --version
+
+      - name: Update server.json version
+        run: |
+          python - <<'PY'
+          import json, re, pathlib
+          p = pathlib.Path('server.json')
+          data = json.loads(p.read_text())
+          data['version'] = '${{ steps.version.outputs.value }}'
+          # Update package version too
+          for pkg in data.get('packages', []):
+              pkg['version'] = '${{ steps.version.outputs.value }}'
+          p.write_text(json.dumps(data, indent=2) + '\n')
+          PY
+
+      - name: Validate server.json
+        run: mcp-publisher validate server.json
+
+      - name: Login to MCP Registry (GitHub OIDC)
+        run: mcp-publisher login github
+
+      - name: Publish to MCP Registry
+        run: mcp-publisher publish server.json
