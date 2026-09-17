@@ -29,6 +29,7 @@ on:
 
 permissions:
   id-token: write   # required for OIDC trusted publishing to PyPI
+  contents: read    # required for actions/checkout on a private repository
 
 jobs:
   publish:

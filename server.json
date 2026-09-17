@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.oliverhruby/gramps-mcp",
   "title": "Gramps MCP MCP Server",
-  "description": "Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees.",
+  "description": "MCP server for Gramps genealogy via the Gramps Web API: CRUD, search, merge, timelines, DNA.",
   "version": "0.1.0",
   "websiteUrl": "https://github.com/oliverhruby/gramps-mcp",
   "repository": {
