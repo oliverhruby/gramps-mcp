@@ -64,7 +64,7 @@ jobs:
         run: mcp-publisher validate server.json
 
       - name: Login to MCP Registry (GitHub OIDC)
-        run: mcp-publisher login github
+        run: mcp-publisher login github-oidc
 
       - name: Publish to MCP Registry
         run: mcp-publisher publish server.json
