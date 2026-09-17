@@ -89,8 +89,15 @@ def verify(base: str, path: str, token: str):
         "Authorization": f"Bearer {token}",
         "User-Agent": "gramps-mcp-seed",
     }
+    if "?" in path:
+        path, query = path.split("?", 1)
+    else:
+        query = None
+    url = base.rstrip("/") + urllib.parse.quote(path)
+    if query:
+        url += "?" + query
     req = urllib.request.Request(
-        url=base.rstrip("/") + urllib.parse.quote(path),
+        url=url,
         headers=headers,
         method="GET",
     )
@@ -299,15 +306,18 @@ def main() -> int:
     for endpoint in ("people", "events", "families", "places", "sources",
                      "citations", "notes", "media", "repositories", "tags"):
         try:
-            status, total, _payload = verify(
-                args.url, f"/api/{endpoint}/?pagesize=1", token
+            status, total, body = verify(
+                args.url, f"/api/{endpoint}/", token
             )
-            print(f"  read /api/{endpoint}/ -> HTTP {status} total={total}")
+            print(f"  read /api/{endpoint}/ -> HTTP {status} total={total} len={len(body)}")
         except Exception as exc:  # noqa: BLE001
             errors.append(f"read {endpoint}: {exc}")
+            print(f"  read /api/{endpoint}/ -> ERROR: {exc}")
 
     if errors:
         print(f"FAIL: {len(errors)} object(s) not created/readable")
+        for msg in errors:
+            print(f"  - {msg}")
         return 1
     print("seed complete:", json.dumps(created, sort_keys=True))
     return 0
