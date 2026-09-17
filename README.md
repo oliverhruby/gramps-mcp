@@ -1,4 +1,6 @@
-# Gramps MCP MCP Server
+# Gramps MCP Server
+
+<!-- mcp-name: io.github.oliverhruby/gramps-mcp -->
 
 Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees.
 
