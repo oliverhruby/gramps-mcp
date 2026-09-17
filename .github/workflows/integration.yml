@@ -104,10 +104,11 @@ jobs:
 
       - name: Create owner user (role 4) via container CLI
         run: |
-          docker exec grampsweb python3 -m gramps_webapi \
-            --config /app/config/config.cfg \
-            user add "$GRAMPS_MCP_USERNAME" "$GRAMPS_MCP_PASSWORD" \
-            --role=4 --email="ciowner@example.invalid"
+          docker exec grampsweb sh -c \
+            'export GRAMPSWEB_SECRET_KEY=$(cat /app/secret/secret); exec python3 -m gramps_webapi \
+            --config /app/config/config.cfg user add "$0" "$1" \
+            --role=4 --email="ciowner@example.invalid"' \
+            "$GRAMPS_MCP_USERNAME" "$GRAMPS_MCP_PASSWORD"
 
       - name: Seed synthetic example tree
         run: |
