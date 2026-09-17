@@ -301,7 +301,7 @@ class _GrampsApi:
         status, _headers, payload = self._request(
             base, "/token/", method="POST",
             body={"username": self.username, "password": self.password},
-            retry_auth=False,
+            token="", retry_auth=False,
         )
         if status == 200 and isinstance(payload, dict):
             entry["access"] = payload.get("access_token") or ""
@@ -354,9 +354,10 @@ class _GrampsApi:
             token = self._token_for(base)
         headers = {
             "Accept": "application/json",
-            "Authorization": f"Bearer {token}",
             "User-Agent": "gramps-mcp",
         }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         data = None
         if body is not None:
             data = json.dumps(body).encode("utf-8")
