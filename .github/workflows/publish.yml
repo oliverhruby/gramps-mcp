@@ -51,6 +51,11 @@ jobs:
       - name: Build sdist + wheel
         run: python -m build
 
+      - name: Debug OIDC claims (temporary)
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=pypi" | jq -r '.value')
+          echo "${TOKEN}" | cut -d. -f2 | base64 -d 2>/dev/null | python -m json.tool
+
       - name: Publish to PyPI (OIDC, no token)
         uses: pypa/gh-action-pypi-publish@v1.14.2
         with:
