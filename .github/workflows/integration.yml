@@ -74,20 +74,33 @@ jobs:
           import urllib.error
           import urllib.request
 
+          last = "no attempt"
           for i in range(90):
               try:
                   with urllib.request.urlopen(
                       "http://localhost:5000/api/", timeout=5
                   ) as resp:
-                      if resp.status < 500:
-                          print(f"API ready after ~{i * 2}s (status {resp.status})")
-                          break
-              except (urllib.error.URLError, urllib.error.HTTPError, OSError):
-                  pass
-              time.sleep(2)
+                      print(f"API responded after ~{i * 2}s: status {resp.status}")
+                      break
+              except urllib.error.HTTPError as e:
+                  # A 4xx/5xx response still proves the server is up.
+                  print(f"API responded after ~{i * 2}s: status {e.code}")
+                  break
+              except (urllib.error.URLError, OSError) as e:
+                  last = repr(e)
+                  time.sleep(2)
           else:
+              print("last error:", last)
               raise SystemExit("Gramps Web did not become ready in time")
           PY
+
+      - name: Inspect container on failure
+        if: failure()
+        continue-on-error: true
+        run: |
+          docker ps -a
+          docker inspect grampsweb --format '{{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}'
+          docker logs grampsweb --tail 200 2>&1 | tail -200 || true
 
       - name: Create owner user (role 4) via container CLI
         run: |
