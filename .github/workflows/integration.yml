@@ -1,0 +1,125 @@
+name: Integration
+
+# Full-stack integration gate: boots a real Gramps Web API container, seeds a
+# synthetic family tree, and runs the whole live e2e suite against it.
+#
+# Design:
+#   - Reusable workflow (workflow_call) so release.yml can gate on it, and also
+#     triggered on push/PR/workflow_dispatch for every contributor.
+#   - PRIVACY: every object comes from tests/e2e/seed_gramps_data.py, all names
+#     are fictitious placeholders. No real identity is ever written or printed.
+#     GRAMPS_MCP_E2E_CI=1 keeps the suite's own output dot-only / fingerprint-only.
+#   - The grampsweb container is ephemeral and cleaned up in a finally step.
+#     The tree is created automatically on first start (GRAMPSWEB_TREE); the
+#     first user (role 4 = owner) is created via the container's CLI because
+#     single-tree mode resolves the tree ID automatically for tree-less owners.
+#
+# Inputs (used when called as a reusable workflow):
+#   grampsweb-image: container image to test against (default latest)
+
+on:
+  workflow_call:
+    inputs:
+      grampsweb-image:
+        type: string
+        required: false
+        default: ghcr.io/gramps-project/grampsweb:latest
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GRAMPS_MCP_E2E: "1"
+      GRAMPS_MCP_E2E_CI: "1"
+      GRAMPS_MCP_INSTANCES: "http://localhost:5000"
+      GRAMPS_MCP_USERNAME: ciowner
+      GRAMPS_MCP_PASSWORD: grammar-ci-owner-2026
+      GRAMPSWEB_TREE: "CI Example Tree"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install package + pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Start Gramps Web container
+        run: |
+          docker run -d --name grampsweb \
+            -p 5000:5000 \
+            -e GRAMPSWEB_TREE="$GRAMPSWEB_TREE" \
+            "${{ inputs.grampsweb-image || 'ghcr.io/gramps-project/grampsweb:latest' }}"
+
+      - name: Wait for API readiness
+        run: |
+          python - <<'PY'
+          import time
+          import urllib.error
+          import urllib.request
+
+          last = "no attempt"
+          for i in range(90):
+              try:
+                  with urllib.request.urlopen(
+                      "http://localhost:5000/api/", timeout=5
+                  ) as resp:
+                      print(f"API responded after ~{i * 2}s: status {resp.status}")
+                      break
+              except urllib.error.HTTPError as e:
+                  # A 4xx/5xx response still proves the server is up.
+                  print(f"API responded after ~{i * 2}s: status {e.code}")
+                  break
+              except (urllib.error.URLError, OSError) as e:
+                  last = repr(e)
+                  time.sleep(2)
+          else:
+              print("last error:", last)
+              raise SystemExit("Gramps Web did not become ready in time")
+          PY
+
+      - name: Inspect container on failure
+        if: failure()
+        continue-on-error: true
+        run: |
+          docker ps -a
+          docker inspect grampsweb --format '{{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}'
+          docker logs grampsweb --tail 200 2>&1 | tail -200 || true
+
+      - name: Create owner user (role 4) via container CLI
+        run: |
+          docker exec grampsweb sh -c \
+            'export GRAMPSWEB_SECRET_KEY=$(cat /app/secret/secret); exec python3 -m gramps_webapi \
+            --config /app/config/config.cfg user add "$0" "$1" \
+            --role=4 --email="ciowner@example.invalid"' \
+            "$GRAMPS_MCP_USERNAME" "$GRAMPS_MCP_PASSWORD"
+
+      - name: Seed synthetic example tree
+        run: |
+          python tests/e2e/seed_gramps_data.py \
+            --url "http://localhost:5000" \
+            --user "$GRAMPS_MCP_USERNAME" \
+            --password "$GRAMPS_MCP_PASSWORD"
+
+      - name: Run live e2e suite against the container
+        run: python -m pytest -m e2e tests/e2e -v --tb=short --no-header
+
+      - name: Container cleanup
+        if: always()
+        run: docker rm -f grampsweb 2>/dev/null || true
