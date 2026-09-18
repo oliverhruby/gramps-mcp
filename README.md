@@ -1,18 +1,18 @@
 # Gramps MCP Server
-
 <!-- mcp-name: io.github.oliverhruby/gramps-mcp -->
-
-**Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees.**
-
-A production-grade MCP server, scaffolded from the canonical, **Glama-proven** reference project (27-tool all-A server model): identical Dockerfile, CI/CD hardware, security checks, quality gates, release pipeline, and Glama TDQS watchdog.
-
-## Badges
 
 [![publish](https://github.com/oliverhruby/gramps-mcp/actions/workflows/publish.yml/badge.svg)](https://github.com/oliverhruby/gramps-mcp/actions/workflows/publish.yml)
 
 [![quality-gates](https://github.com/oliverhruby/gramps-mcp/actions/workflows/quality-gates.yml/badge.svg)](https://github.com/oliverhruby/gramps-mcp/actions/workflows/quality-gates.yml)
 
 [![container-security](https://github.com/oliverhruby/gramps-mcp/actions/workflows/container-security.yml/badge.svg)](https://github.com/oliverhruby/gramps-mcp/actions/workflows/container-security.yml)
+
+
+
+**Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees.**
+A production-grade MCP server, scaffolded from the canonical, **Glama-proven** reference project (27-tool all-A server model): identical Dockerfile, CI/CD hardware, security checks, quality gates, release pipeline, and Glama TDQS watchdog.
+
+
 
 ## What it provides
 
