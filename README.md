@@ -15,7 +15,7 @@ Gramps is a free, open-source genealogy program, and **Gramps Web** ships a REST
 
 This server lets your agent query and operate a Gramps tree directly: full CRUD for all object types, full-text/semantic search, merge objects (phoenix/titanic survival), timelines, relationships, alive estimates, DNA match analysis, a media pipeline (binary upload, file download, thumbnails, OCR, face detection), GEDCOM / Gramps XML import and export with privacy filters, report generation, raw transactions, and admin over users, trees, bookmarks and type vocabularies — including **multiple instances** (one or more Gramps Web base URLs, each with token/JWT auth).
 
-> **⚠️ Unofficial API.** Like all Gramps MCP servers, this covers the upstream Gramps Web REST API (Gramps XML / GEDCOM data model). Use read-only features freely; use the write features (`manage_*`, `merge_objects`, `manage_import`, `manage_transaction`, …) carefully — they mutate real tree data.
+> **⚠️ Official API, mutable data.** Unlike the EduPage server (which reverse-engineers undocumented endpoints), this uses the **official, documented** Gramps Web REST API — [`gramps-web-api`](https://github.com/gramps-project/gramps-web-api), maintained under the `gramps-project` organization with a published OpenAPI spec at <https://gramps-project.github.io/gramps-web-api/>. Use read-only features freely; use the write features (`manage_*`, `merge_objects`, `manage_import`, `manage_transaction`, …) carefully — they mutate real tree data.
 
 ---
 
@@ -344,8 +344,8 @@ Contributor and maintainer guidance is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Limitations
 
-- **Depends on the Gramps Web API.** Field coverage follows the upstream `gramps-web-api` REST schema; object payloads use Gramps handle/`gramps_id` conventions.
-- **Unofficial / read-mostly by design where not marked ✅.** Never run destructive tool-calls you don't understand; the server does not add a confirmation layer on top of the API.
+- **Depends on the official Gramps Web API.** Field coverage follows the upstream `gramps-project/gramps-web-api` REST schema; object payloads use Gramps handle/`gramps_id` conventions.
+- **Write tools mutate real data with no confirmation layer.** Never run destructive tool-calls you don't understand; the server does not add an extra confirmation prompt on top of the API.
 - **Auth lives for the process lifetime.** Sessions are created lazily per instance via `api/token/` and refreshed on demand; it is not a browser-style persistent login.
 - **Media OCR / face detection depend on optional Gramps Web services.** When the instance doesn't enable them, those `manage_media` features degrade to upload/download only.
 - **Single-tree license constraints.** Gramps Web's free tier historically gates multi-user/tree features; administration tools (`manage_user`, some `manage_tree` actions) require a license tier that exposes them.
