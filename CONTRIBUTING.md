@@ -29,7 +29,7 @@ python -m venv .venv            # or: uv venv
 
 Sanity (mirrors CI): `python -m py_compile src/gramps_mcp/__init__.py`.
 The real verification is a manual MCP handshake:
-`npx @modelcontextprotocol/inspector uvx gramps-mcp` then `tools/list`.
+`npx @modelcontextprotocol/inspector uvx gramps-mcp-full` then `tools/list`.
 
 ## Quality gates (AGENTS.md rule 3)
 

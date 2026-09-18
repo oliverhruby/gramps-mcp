@@ -1,14 +1,14 @@
 name: Publish
 
-# Publish gramps-mcp to PyPI using OpenID Connect (trusted publishing).
+# Publish gramps-mcp-full to PyPI using OpenID Connect (trusted publishing).
 #
 # One-time setup required on PyPI (no API token needed after that):
 #   1. Create an account at https://pypi.org (free) if you don't have one.
 #   2. Go to https://pypi.org/manage/projects/ and create a project named
-#      `gramps-mcp`, or add a publisher to an existing project by opening
+#      `gramps-mcp-full`, or add a publisher to an existing project by opening
 #      it -> "Publishing" -> "Add a new publisher".
 #   3. Provider: GitHub Actions
-#        Project name : gramps-mcp
+#        Project name : gramps-mcp-full
 #        Owner        : oliverhruby
 #        Repository   : gramps-mcp
 #        Workflow name: publish.yml        <- must match THIS filename

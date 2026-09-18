@@ -69,7 +69,7 @@ except ValueError:
     MCP_PORT = 8000
     _MCP_PORT_ERROR = f"Error: invalid MCP_PORT '{_MCP_PORT_RAW}'. Expected an integer between 1 and 65535."
 
-_APP_DIST = "gramps-mcp"
+_APP_DIST = "gramps-mcp-full"
 
 
 def _server_version() -> str:

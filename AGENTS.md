@@ -41,7 +41,7 @@ process, CI/CD workflow reference, Conventional Commits — lives in
 6. **FastMCP 1.x has no `version` param.** The server pins
    `server._mcp_server.version` from the installed dist info via `_APP_DIST`
    in `__init__.py`. Keep `_APP_DIST` equal to the `pyproject.toml` project
-   name (`gramps-mcp`); otherwise the advertised server version is wrong.
+   name (`gramps-mcp-full`); otherwise the advertised server version is wrong.
 
 7. **e2e privacy (public repo + public CI).** Exact identities must never be
    committed, printed in CI logs, or uploaded as artifacts. CI checks only

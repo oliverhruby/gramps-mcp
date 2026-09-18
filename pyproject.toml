@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gramps-mcp"
+name = "gramps-mcp-full"
 version = "0.1.0"
 description = "Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Oliver Hruby" }]
 requires-python = ">=3.10"
-keywords = ["mcp", "gramps-mcp", "ai", "agent"]
+keywords = ["mcp", "gramps-mcp", "gramps-mcp-full", "ai", "agent"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -33,7 +33,7 @@ Repository = "https://github.com/oliverhruby/gramps-mcp"
 Issues = "https://github.com/oliverhruby/gramps-mcp/issues"
 
 [project.scripts]
-gramps-mcp = "gramps_mcp:main"
+gramps-mcp-full = "gramps_mcp:main"
 
 [dependency-groups]
 dev = ["pytest"]
