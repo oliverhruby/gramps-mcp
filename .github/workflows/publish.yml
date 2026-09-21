@@ -61,9 +61,14 @@ jobs:
         with:
           packages-dir: dist/
 
-      - name: Publish to Glama
+      - name: Verify Glama entry (synced from MCP Registry)
         env:
           GLAMA_API_KEY: ${{ secrets.GLAMA_API_KEY }}
         run: |
-          pip install --quiet glama
-          glama publish
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${GLAMA_API_KEY}" \
+            https://glama.ai/api/mcp/v1/servers/oliverhruby/gramps-mcp)
+          echo "Glama directory API status: ${STATUS} (200 = live, 404 = pending sync)"
+          if [ "${STATUS}" != "200" ]; then
+            echo "::warning::Glama entry not live yet. Glama syncs automatically from the Official MCP Server Registry (publish-mcp-registry.yml); check https://glama.ai/mcp/servers/oliverhruby/gramps-mcp later."
+          fi
