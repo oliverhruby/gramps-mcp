@@ -48,6 +48,8 @@ GRAMPS_MCP_INSTANCES = os.environ.get("GRAMPS_MCP_INSTANCES", "")
 GRAMPS_MCP_TOKENS = os.environ.get("GRAMPS_MCP_TOKENS", "")
 # 1 = do not verify TLS certificates (self-signed Gramps Web instances).
 GRAMPS_MCP_INSECURE = os.environ.get("GRAMPS_MCP_INSECURE", "") == "1"
+# Read-only mode: when set, write actions (create, update, delete, upload, etc.) are rejected.
+GRAMPS_MCP_READONLY = os.environ.get("GRAMPS_MCP_READONLY", "").lower() in ("1", "true", "yes")
 # Read timeout in seconds for Gramps Web API calls.
 _GRAMPS_MCP_TIMEOUT_RAW = os.environ.get("GRAMPS_MCP_TIMEOUT", "60")
 try:
@@ -555,6 +557,8 @@ def _crud(collection, name, action, handle, data, query, instance):
       update -> PUT    /<collection>/<handle>    (body = data)
       delete -> DELETE /<collection>/<handle>
     """
+    if GRAMPS_MCP_READONLY and action != "get":
+        raise _ApiError("Read-only mode: write actions are disabled. Set GRAMPS_MCP_READONLY=0 or unset the env var to enable writes.")
     method, need_handle = _READ_ACTION[action]
     if data is not None:
         data = _drop_empty(data)

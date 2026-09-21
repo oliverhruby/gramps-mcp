@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gramps-mcp-full"
-version = "0.1.0"
+version = "0.2.0"
 description = "Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD for all object types, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users, trees."
 readme = "README.md"
 license = { text = "MIT" }

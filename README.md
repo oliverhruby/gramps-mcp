@@ -66,7 +66,7 @@ This project deliberately goes further:
 | **Server metadata** — database, versions, locale, counts, capabilities | ❌ | ❌ | ❌ | ✅ |
 | **Multiple instances** — one or more Gramps Web base URLs | ❌ | ❌ | ✅ | ✅ |
 | **Auth** — lazy token login `/api/token/` + pre-issued JWTs + refresh | JWT | user/pass | token | ✅ |
-| **Read-only mode** | ❌ | ❌ | ✅ | ❌ |
+| **Read-only mode** | ❌ | ❌ | ✅ | ✅ |
 | **Quality gates by default** — py_compile, Docker MCP handshake, HTTP auth smoke, Trivy, Glama TDQS watchdog | ❌ | ❌ | ❌ | ✅ |
 | **Publishing** — PyPI, GHCR, MCP Registry, Glama | PyPI | Docker Hub/GitHub | GHCR | ✅ |
 
@@ -206,7 +206,7 @@ export GRAMPS_MCP_PASSWORD="your_password"
 
 **Multiple instances?** Add a comma-separated `GRAMPS_MCP_INSTANCES` list. Login happens per instance `api/token/` (default on first use). Alternatively, set `GRAMPS_MCP_TOKENS` (comma-separated, aligned with `GRAMPS_MCP_INSTANCES`) to seed pre-issued JWTs for each instance.
 
-Other knobs: `GRAMPS_MCP_TIMEOUT` (read timeout seconds, default `60`), `GRAMPS_MCP_INSECURE=1` (skip TLS verification for self-signed servers).
+Other knobs: `GRAMPS_MCP_TIMEOUT` (read timeout seconds, default `60`), `GRAMPS_MCP_INSECURE=1` (skip TLS verification for self-signed servers), `GRAMPS_MCP_READONLY=1` (run all tools in read‑only mode; write actions `manage_*`, `merge_objects`, `manage_import`, `manage_export`, etc. are rejected).
 
 ### 3. Register with your MCP client
 
