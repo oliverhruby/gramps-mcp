@@ -63,8 +63,44 @@ jobs:
       - name: Validate server.json
         run: mcp-publisher validate server.json
 
+      - name: Wait for package version on PyPI
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          # The MCP Registry validates that the PyPI package version referenced by
+          # server.json already exists. On a tag push this job races the PyPI
+          # publish workflow, so poll until the release is indexed (bounded).
+          URL="https://pypi.org/pypi/gramps-mcp-full/${VERSION}/json"
+          for attempt in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$URL" || true)
+            if [ "$code" = "200" ]; then
+              echo "PyPI release ${VERSION} is available after ${attempt} attempt(s)."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/20: ${URL} returned HTTP ${code}; retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::PyPI release gramps-mcp-full ${VERSION} not found after 20 attempts (~5 min). ${URL} still not returning 200."
+          exit 1
+
       - name: Login to MCP Registry (GitHub OIDC)
         run: mcp-publisher login github-oidc
 
       - name: Publish to MCP Registry
-        run: mcp-publisher publish server.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The registry-side PyPI check can still lag briefly after indexing, so
+          # retry the publish itself instead of failing the whole release.
+          for attempt in $(seq 1 5); do
+            if mcp-publisher publish server.json; then
+              echo "Published to MCP Registry on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/5: publish failed; retrying in 30s..."
+            sleep 30
+          done
+          echo "::error::mcp-publisher publish server.json failed after 5 attempts."
+          exit 1

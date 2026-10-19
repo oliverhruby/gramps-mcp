@@ -182,7 +182,9 @@ EVENT_BIRTH = {
     "description": "Birth of Emmett",
     "type": {"_class": "EventType", "string": "Birth"},
     "date": {"_class": "Date", "dateval": [2, 10, 1945, False]},
-    "place_handle": PLACE,
+    # Event stores its location as `place` (a place handle); the API rejects
+    # `place_handle` as an unknown Event key.
+    "place": PLACE,
 }
 
 FAMILY_1 = {
