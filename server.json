@@ -3,7 +3,7 @@
   "name": "io.github.oliverhruby/gramps-mcp",
   "title": "Gramps MCP MCP Server",
   "description": "MCP server for Gramps genealogy via the Gramps Web API: CRUD, search, merge, timelines, DNA.",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "websiteUrl": "https://github.com/oliverhruby/gramps-mcp",
   "repository": {
     "url": "https://github.com/oliverhruby/gramps-mcp",
@@ -13,7 +13,7 @@
     {
       "registryType": "pypi",
       "identifier": "gramps-mcp-full",
-      "version": "0.1.0",
+      "version": "0.2.1",
       "transport": {
         "type": "stdio"
       },
