@@ -35,3 +35,7 @@ tests/e2e/.local*
 
 # Local opencode config
 .opencode/
+
+# APM (Agent Package Manager) local state
+apm_modules/
+apm.lock.yaml

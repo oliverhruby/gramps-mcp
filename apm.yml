@@ -1,0 +1,23 @@
+# Agent Package Manager (APM) manifest -- https://microsoft.github.io/apm/
+# One-shot consumer install: `apm install oliverhruby/gramps-mcp`
+name: gramps-mcp
+version: 0.2.1
+description: "Full-coverage MCP server for Gramps genealogy (Gramps Web API backend): CRUD, search, merge, timelines, relations, living status, DNA, media, import/export, reports, transactions, users and trees -- with a bundled agent skill."
+author: Oliver Hruby
+license: MIT
+homepage: https://github.com/oliverhruby/gramps-mcp
+repository: https://github.com/oliverhruby/gramps-mcp
+includes: auto
+dependencies:
+  mcp:
+    # Self-defined stdio server: published on PyPI as gramps-mcp-full.
+    # Credentials are indirected from the installing process environment
+    # (set GRAMPS_MCP_USERNAME / GRAMPS_MCP_PASSWORD before installing).
+    - name: gramps
+      registry: false
+      transport: stdio
+      command: uvx
+      args: ["gramps-mcp-full"]
+      env:
+        GRAMPS_MCP_USERNAME: "${GRAMPS_MCP_USERNAME}"
+        GRAMPS_MCP_PASSWORD: "${GRAMPS_MCP_PASSWORD}"
