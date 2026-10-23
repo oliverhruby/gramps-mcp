@@ -26,7 +26,6 @@ This server lets your agent query and operate a Gramps tree directly: full CRUD 
 - [Getting started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [1. Install](#1-install)
-  - [Install with APM](#install-with-apm)
   - [2. Configure credentials](#2-configure-credentials)
   - [3. Register with your MCP client](#3-register-with-your-mcp-client)
 - [Prompt examples](#prompt-examples)
@@ -175,6 +174,39 @@ When `MCP_API_KEY` is set, HTTP requests must include `Authorization: Bearer <ke
 
 > `pyproject.toml` pins `mcp<2` (the stable FastMCP v1 API). `mcp 2.x` renamed `FastMCP` to `MCPServer` and changed the API surface; this server targets the FastMCP v1 API for simplicity and stability.
 
+**Option E -- one-shot with [APM](https://microsoft.github.io/apm/) (server *and* bundled skill)**
+
+[APM](https://microsoft.github.io/apm/) (Agent Package Manager) is an emerging open standard for distributing agent context -- think npm for agent skills, MCP servers and configuration. It is **optional**: skip it and any option above works exactly as before. If you already use APM (or want to try it), one command installs both pieces this project ships.
+
+1. Install the CLI once. Requirements: `git`, plus `uv` for the server runtime.
+   - Windows: `winget install --id Microsoft.APM -e` (or `scoop bucket add apm https://github.com/microsoft/scoop-apm; scoop install apm`)
+   - macOS / Linux: `brew install apm`
+   - Any platform with Python 3.10+: `pip install apm-cli`
+   - Other options: [installation docs](https://microsoft.github.io/apm/getting-started/installation/)
+
+2. Install this package:
+
+   ```bash
+   apm install oliverhruby/gramps-mcp
+   ```
+
+   This single command:
+
+   - writes the `uvx gramps-mcp-full` stdio server entry into the MCP config of every harness APM detects (Claude Code `.mcp.json`, VS Code / GitHub Copilot, Cursor, OpenCode, Codex, Gemini, Windsurf, Kiro, ...); add `--target claude` (or `codex`, `cursor`, ...) to force one harness;
+   - deploys the bundled `person-research-brief` skill into that harness's skills directory (`.claude/skills/`, `.agents/skills/`, ...).
+
+3. Verify:
+
+   ```bash
+   apm mcp list        # server registered?
+   ```
+
+   `apm uninstall oliverhruby/gramps-mcp` removes the package and the deployed skill files, but **leaves the MCP server entry** it wrote into `.mcp.json` (and other harness configs) -- delete that entry yourself if you want it gone.
+
+Credentials are never embedded in the package: set `GRAMPS_MCP_USERNAME` / `GRAMPS_MCP_PASSWORD` (and optionally `GRAMPS_MCP_INSTANCES`) in your environment **before** running `apm install` -- see [2. Configure credentials](#2-configure-credentials) -- and APM passes them through to the generated server config.
+
+**Pinning.** Append `#<sha>` (or `#<tag>` once a release contains [`apm.yml`](apm.yml)) to pin an exact revision and silence APM's "dependency unpinned" warning; without a pin, APM records the resolved commit in `apm.lock.yaml`. Releases up to `v0.2.1` predate the manifest, so use a commit sha until the next release.
+
 **Development from source**
 
 Use this if you are contributing or debugging locally.
@@ -186,21 +218,6 @@ git clone https://github.com/oliverhruby/gramps-mcp.git
 cd gramps-mcp
 pip install -e . pytest
 ```
-
-### Install with APM
-
-[APM (Agent Package Manager)](https://microsoft.github.io/apm/) is an emerging open standard for packaging and installing agent context -- skills, MCP servers and more -- in a harness-agnostic way (think `npm`, but for agent packages). If your client ships with APM (or you drive it through an APM-capable meta-agent), one command installs everything this project provides:
-
-```bash
-apm install oliverhruby/gramps-mcp
-```
-
-One shot does both:
-
-- **MCP server** -- writes the `uvx gramps-mcp-full` stdio server entry into the MCP config of every harness APM detects (Claude Code `.mcp.json`, VS Code / GitHub Copilot, Cursor, OpenCode, Codex CLI, Gemini CLI, ...).
-- **Bundled skill** -- deploys the `person-research-brief` skill (a researched-to-brief workflow for people in your tree) into the harness's skills directory (`.claude/skills/`, `.agents/skills/`, ...).
-
-Credentials are never embedded in the package: set `GRAMPS_MCP_USERNAME` / `GRAMPS_MCP_PASSWORD` (and optionally `GRAMPS_MCP_INSTANCES`) in your environment **before** running `apm install` -- see [2. Configure credentials](#2-configure-credentials) -- and APM passes them through to the server. Use `apm mcp list` to confirm the server landed, `apm uninstall oliverhruby/gramps-mcp` to remove it again. The manifest is [`apm.yml`](apm.yml) in this repository.
 
 ### 2. Configure credentials
 
