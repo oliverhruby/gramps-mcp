@@ -57,7 +57,7 @@ jobs:
           echo "${TOKEN}" | cut -d. -f2 | base64 -d 2>/dev/null | python -m json.tool
 
       - name: Publish to PyPI (OIDC, no token)
-        uses: pypa/gh-action-pypi-publish@v1.14.2
+        uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           packages-dir: dist/
 
